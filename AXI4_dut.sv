@@ -135,21 +135,22 @@ module AXI4_DUT (
 		case (AW_PST)
 			AW_IDLE: 
 				begin
-					AW_NST = AWVALID?AW_START:AW_PST;
+					AW_NST = AW_START;
 					AWREADY = 0;
-					r_AWADDR = 0;
 				end
 			AW_START:
 				begin
-					AW_NST = AW_READY;
-					AWREADY = 1;
-					r_AWADDR =AWADDR;
+					if (AWVALID == 1) begin
+						AW_NST = AW_READY;
+						r_AWADDR = AWADDR;
+					end	
+					else AW_NST = AW_PST;
+					AWREADY = 0;
 				end
 			AW_READY:
 				begin
 					AW_NST = AW_IDLE;
-					AWREADY = 0;
-					r_AWADDR = 0;
+					AWREADY = 1;
 				end
 			default : /* default */;
 		endcase
