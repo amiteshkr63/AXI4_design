@@ -71,7 +71,7 @@ module AXI4_DUT (
 	output reg BVALID; //Indicates Slave Sending Write Response(acknowledgement) and other Control Signals
 	output reg [3:0]BID; //Indicates Write Response ID || IDENTIFICATION TAG for the Write Response Group of Signals
 	output reg [1:0]BRESP; //Indicates Status of Write Transaction (Successful or Nature of Failure) 
-	input BREADY; //Indicates Master is ready to accept Slave's Write Response
+	input BREADY; //Indicates Master is ready to accept Slave's Write Response {BREADY=>[BVALID, BID, BRESP]}
 
 	//Read Address Channel (AR|ar)
 	input ARVALID; //Indicates Master Sending Valid Read Address and Other Control signals 
