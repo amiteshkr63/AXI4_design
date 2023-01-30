@@ -49,6 +49,7 @@ module AXI4_DUT (
 	input ACLK; 
 	input ARESETn;
 
+	//An address channel carries control information that describes the nature of the data to be transferred.
 	//Write Address Channel (AW|aw)
 	input AWVALID; //Indicates Master sending Valid write address and Other Control Signals
 	input [3:0]AWID; //Indicates Write Address ID || IDENTIFICATION TAG for the Write Address Group of Signals
@@ -85,14 +86,14 @@ module AXI4_DUT (
 	output reg RVALID; //Indicates Slave Sending Valid Read Data and Other Control Signals
 	output reg [3:0]RID; //Indicates Read Data ID || IDENTIFICATION TAG for Read Data group of Signals
 	output reg [31:0]RDATA; //Indicates Read Data per Beat
-	output reg [1:0]RRESP; //Indicates Status of Read Transaction (Successful or Nature of Failure)
+	output reg [1:0]RRESP; //Indicates Status of Read Transaction (Successful or Nature of Failure) {[RREADY(always asserted)=>RLAST]=>[RVALID, RRESP]}
 	output reg RLAST; //Indicates Last set of Read Data available for Transfer || Indicates Last Beat
 	input RREADY; //Indicates Master Ready to accept SLAVE's DATA
 
 	//Internal Registers
 	reg [31:0]r_AWADDR;
-	//State Declaration
 	
+	////////////////////////////////////////////////////////////State Declaration//////////////////////////////////////////////////////////////////
 	//Write Address States
 	typedef enum bit[1:0]{AW_IDLE, AW_START, AW_READY}aw_state;
 	aw_state AW_PST, AW_NST;
