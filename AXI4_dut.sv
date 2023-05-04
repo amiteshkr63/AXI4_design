@@ -54,13 +54,13 @@ module AXI4_DUT (
 	input AWVALID; //Indicates Master sending Valid write address and Other Control Signals
 	input [3:0]AWID; //Indicates Write Address ID || IDENTIFICATION TAG for the Write Address Group of Signals
 	input [7:0]AWLEN; //Indicates BURST LENGTH || (BURST LENGTH = AWLEN + 1) 
-	input [2:0]AWSIZE; //Indicates Unique Transaction size (BURST SIZE = 2 ^ AWSIZE) || Size of a Beat
+	input [2:0]AWSIZE; //Indicates Unique Transaction Size (BURST SIZE = 2 ^ AWSIZE) || Size of a Beat
 	input [31:0]AWADDR; //Indicates Starting Write Address of First Transfer of WRITE BURST TRANSACTION  
 	input [1:0]AWBURST; //Indicates BURST TYPE || FIXED, INCR, WRAP
 	output reg AWREADY; //Indicates Slave ready to accept an Write Address from Master
 
 	//Write Data Channel (W|w)
-	input WVALID; //Indicates Master Sending Valid Data and other Control signals 
+	input WVALID; //Indicates Master Sending Valid Data and other Control signals
 	input [3:0]WID; //Indicates Write Data ID || IDENTIFICATION TAG for the Write Data Group of Signals
 	input [31:0]WDATA; //Indicates Write Data per Beat
 	input [3:0]WSTRB; //Indicates which field of WDATA contains INFORMATION {[31:24] [23:16] [15:8] [7:0]}
@@ -90,10 +90,12 @@ module AXI4_DUT (
 	output reg RLAST; //Indicates Last set of Read Data available for Transfer || Indicates Last Beat
 	input RREADY; //Indicates Master Ready to accept SLAVE's DATA
 
+	/*For "Wrap Mode": Valid values for "AWLEN" and "ARLEN" is 1, 3, 7 and 15*/
+
 	//Internal Registers
-	reg [31:0]r_AWADDR;
-	
+	reg [31:0]r_AWADDR;	
 	reg [7:0]mem[127:0];
+
 	////////////////////////////////////////////////////////////State Declaration//////////////////////////////////////////////////////////////////
 	//Write Address States
 	typedef enum bit[1:0]{AW_IDLE, AW_START, AW_READY}aw_state;
@@ -116,6 +118,7 @@ module AXI4_DUT (
 	r_state R_PST, R_NST;
 
 	//State Assignment
+	//Reset Decoder
 	always_ff @(posedge clk or negedge ARESETn) begin
 		if(~ARESETn) begin
 			AW_PST <= 0;
@@ -154,7 +157,6 @@ module AXI4_DUT (
 					AW_NST = AW_IDLE;
 					AWREADY = 1;
 				end
-			default : /* default */;
 		endcase
 	end
 
@@ -211,8 +213,8 @@ module AXI4_DUT (
 			4'b1111: begin
 						mem[awaddr]=wdata[7:0];
 						mem[awaddr+1]=wdata[15:8];
-						mem[awaddr+1]=wdata[23:16];
-						mem[awaddr+1]=wdata[31:24];
+						mem[awaddr+2]=wdata[23:16];
+						mem[awaddr+3]=wdata[31:24];
 					 end
 		endcase
 		return awaddr;
@@ -220,83 +222,85 @@ module AXI4_DUT (
 
 	function incr_write_mode(input [31:0]awaddr, input [31:0]wdata, input [3:0]wstrb, output [31:0]ret_addr);
 		unique case (wstrb)
+			// 4'b0000: return ret_addr = awaddr+1;
 			4'b0001: begin
-						mem[awaddr]=wdata[7:0];
-						return ret_addr = awaddr+1;
+						mem[awaddr]     = wdata[7:0];
+						return ret_addr = awaddr + 1;
 					 end
 			4'b0010: begin
-						mem[awaddr]=wdata[15:8];
-						return ret_addr = awaddr+1;
+						mem[awaddr]     = wdata[15:8];
+						return ret_addr = awaddr + 1;
 					 end
 			4'b0011: begin
-						mem[awaddr]=wdata[7:0];
-						mem[awaddr+1]=wdata[15:8];
-						return ret_addr = awaddr+2;
+						mem[awaddr]     = wdata[7:0];
+						mem[awaddr + 1] = wdata[15:8];
+						return ret_addr = awaddr + 2;
 					 end
 			4'b0100: begin
-						mem[awaddr]=wdata[23:16];
-						return ret_addr = awaddr+1;
+						mem[awaddr]     = wdata[23:16];
+						return ret_addr = awaddr + 1;
 					 end
 			4'b0101: begin
-					 	mem[awaddr]=wdata[7:0];
-					 	mem[awaddr+1]=wdata[23:16];
-						return ret_addr = awaddr+2;
+					    mem[awaddr]     = wdata[7:0];
+					    mem[awaddr + 1] = wdata[23:16];
+						return ret_addr = awaddr + 2;
 					 end
 			4'b0110: begin
-						mem[awaddr]=wdata[15:8];
-						mem[awaddr+1]=wdata[23:16];
-						return ret_addr = awaddr+2;
+						mem[awaddr]     = wdata[15:8];
+						mem[awaddr + 1] = wdata[23:16];
+						return ret_addr = awaddr + 2;
 					 end
 			4'b0111: begin
-						mem[awaddr]=wdata[7:0];
-						mem[awaddr+1]=wdata[15:8];
-						mem[awaddr+2]=wdata[23:16];
-						return ret_addr = awaddr+3;
+						mem[awaddr]     = wdata[7:0];
+						mem[awaddr + 1] = wdata[15:8];
+						mem[awaddr + 2] = wdata[23:16];
+						return ret_addr = awaddr + 3;
 					 end
 			4'b1000: begin
-						mem[awaddr]=wdata[31:24];
-						return ret_addr = awaddr+1;
+						mem[awaddr]     = wdata[31:24];
+						return ret_addr = awaddr + 1;
 					 end
 			4'b1001: begin
-					 	mem[awaddr]=wdata[7:0];
-					 	mem[awaddr+1]=wdata[31:24];
-						return ret_addr = awaddr+2;
+					    mem[awaddr]     = wdata[7:0];
+					    mem[awaddr + 1] = wdata[31:24];
+						return ret_addr = awaddr + 2;
 					 end
 			4'b1010: begin
-						mem[awaddr]=wdata[15:8];
-						mem[awaddr+1]=wdata[31:24];
-						return ret_addr = awaddr+2;
+						mem[awaddr]     = wdata[15:8];
+						mem[awaddr + 1] = wdata[31:24];
+						return ret_addr = awaddr + 2;
 					 end
 			4'b1011: begin
-						mem[awaddr]=wdata[7:0];
-						mem[awaddr+1]=wdata[15:8];
-						mem[awaddr+2]=wdata[31:24];
-						return ret_addr = awaddr+3;
+						mem[awaddr]     = wdata[7:0];
+						mem[awaddr + 1] = wdata[15:8];
+						mem[awaddr + 2] = wdata[31:24];
+						return ret_addr = awaddr + 3;
 					 end
 			4'b1100: begin
-						mem[awaddr]=wdata[23:16];
-						mem[awaddr+1]=wdata[31:24];
-						return ret_addr = awaddr+2;
+						mem[awaddr]     = wdata[23:16];
+						mem[awaddr + 1] = wdata[31:24];
+						return ret_addr = awaddr + 2;
 					 end
 			4'b1101: begin
-						mem[awaddr]=wdata[7:0];
-						mem[awaddr+1]=wdata[23:16];
-						mem[awaddr+2]=wdata[31:24];
-						return ret_addr = awaddr+3;
+						mem[awaddr]     = wdata[7:0];
+						mem[awaddr + 1] = wdata[23:16];
+						mem[awaddr + 2] = wdata[31:24];
+						return ret_addr = awaddr + 3;
 					 end
 			4'b1110: begin
-						mem[awaddr]=wdata[15:8];
-						mem[awaddr+1]=wdata[23:16];
-						mem[awaddr+2]=wdata[31:24];
-						return ret_addr = awaddr+3;
+						mem[awaddr]     = wdata[15:8];
+						mem[awaddr + 1] = wdata[23:16];
+						mem[awaddr + 2] = wdata[31:24];
+						return ret_addr = awaddr + 3;
 					 end
 			4'b1111: begin
-						mem[awaddr]=wdata[7:0];
-						mem[awaddr+1]=wdata[15:8];
-						mem[awaddr+2]=wdata[23:16];
-						mem[awaddr+3]=wdata[31:24];
-						return ret_addr = awaddr+4;
+						mem[awaddr]     = wdata[7:0];
+						mem[awaddr + 1] = wdata[15:8];
+						mem[awaddr + 2] = wdata[23:16];
+						mem[awaddr + 3] = wdata[31:24];
+						return ret_addr = awaddr + 4;
 					 end
 		endcase
 	endfunction : incr_write_mode
+
  endmodule : AXI4_DUT
